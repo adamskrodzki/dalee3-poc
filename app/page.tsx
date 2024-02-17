@@ -1,6 +1,4 @@
-// Add the "use client" directive at the top of your file for client-side only execution
 "use client";
-
 import { useState, useRef } from 'react';
 
 export default function Home() {
@@ -9,7 +7,8 @@ export default function Home() {
   const [audioBlobUrl, setAudioBlobUrl] = useState<string>('');
   const [translation, setTranslation] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [logs, setLogs] = useState<string[]>([]); // State to hold log messages
+  const [selectedAPI, setSelectedAPI] = useState<'OpenAI' | 'StabilityAI'>('OpenAI');
+  const [logs, setLogs] = useState<string[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   const addLog = (message: string) => {
@@ -19,11 +18,11 @@ export default function Home() {
   const startRecording = async () => {
     try {
       addLog("Starting recording...");
-      const stream: MediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
       const audioChunks: BlobPart[] = [];
 
-      mediaRecorderRef.current.ondataavailable = (event: BlobEvent) => {
+      mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunks.push(event.data);
       };
 
@@ -32,7 +31,7 @@ export default function Home() {
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioBlobUrl(audioUrl);
         addLog("Recording stopped. Translating audio...");
-        translateAudio(audioBlob); // Call translateAudio function here
+        translateAudio(audioBlob);
       };
 
       mediaRecorderRef.current.start();
@@ -54,8 +53,6 @@ export default function Home() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm');
     formData.append('model', 'whisper-1');
-    formData.append('temperature','0.1');
-    formData.append('prompt', 'recorded voice (source material) might not be in English, but remember, that your translation MUST be in English');
   
     try {
       console.log("Translating.....");
@@ -71,24 +68,26 @@ export default function Home() {
   
       if (response.status !== 200) {
         console.error(`Error translating audio: HTTP status ${response.status}`);
-        setTranslation('Error translating audio.'); // Optionally update the state to reflect the error
+        setTranslation('Error translating audio.');
         addLog(`Error translating audio: HTTP status ${response.status}`);
-        return; // Stop execution of the function here
+        return;
       }
   
       const data = await response.json();
       setTranslation(data.text);
-      addLog("Translation completed."+JSON.stringify(response));
-      generateImage(data.text); // Call generateImage function with the translated text
+      console.log("Translated: " + data.text);
+      addLog("Translation completed.");
+      // Use the selected API to generate an image
+      selectedAPI === 'OpenAI' ? generateImage(data.text) : generateImageWithStabilityAI(data.text);
     } catch (error) {
       console.error("Error translating audio: ", error);
       addLog(`Error translating audio: ${error}`);
     }
   };
-  
+
   const generateImage = async (promptText: string) => {
     try {
-      addLog("Image generation started.");
+      addLog("Generating image with OpenAI...");
       const response = await fetch("https://api.openai.com/v1/images/generations", {
         method: 'POST',
         headers: {
@@ -99,16 +98,32 @@ export default function Home() {
           model: "dall-e-3",
           prompt: promptText,
           n: 1,
-          size: "1024x1024",//other legal values  1024×1792, 1792×1024
+          size: "1024x1024",
         }),
       });
+
+      addLog(`Image generation request sent, HTTP status: ${response.status}`);
+
+      if (response.status !== 200) {
+        console.error("Error generating image: ", error);
+        addLog(`Error generating image: HTTP status ${response.status}`);
+        return;
+      }
+
       const data = await response.json();
-      setImageUrl(data.data[0].url); // Update the state with the URL of the generated image
-      addLog("Image generated successfully.");
+      setImageUrl(data.data[0].url);
+      addLog("Image generated successfully with OpenAI.");
     } catch (error) {
       console.error("Error generating image: ", error);
       addLog(`Error generating image: ${error}`);
     }
+  };
+
+  // Placeholder function for StabilityAI
+  const generateImageWithStabilityAI = async (promptText: string) => {
+    // Placeholder for future implementation
+    addLog("Generating image with StabilityAI (placeholder)...");
+    addLog("StabilityAI image generation not yet implemented.");
   };
 
   return (
@@ -119,6 +134,26 @@ export default function Home() {
         value={apiKey}
         onChange={(e) => setApiKey(e.target.value)}
       />
+      <div>
+        <label>
+          <input
+            type="radio"
+            value="OpenAI"
+            checked={selectedAPI === 'OpenAI'}
+            onChange={() => setSelectedAPI('OpenAI')}
+          />
+          OpenAI
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="StabilityAI"
+            checked={selectedAPI === 'StabilityAI'}
+            onChange={() => setSelectedAPI('StabilityAI')}
+          />
+          StabilityAI
+        </label>
+      </div>
       <button onClick={isRecording ? stopRecording : startRecording}>
         {isRecording ? 'Stop Recording' : 'Start Recording'}
       </button>
