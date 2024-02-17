@@ -119,15 +119,13 @@ export default function Home() {
       addLog(`Error generating image: ${error}`);
     }
   };
-
-  // Updated function for StabilityAI with a separate API key
   const generateImageWithStabilityAI = async (promptText: string) => {
     addLog("Generating image with StabilityAI...");
 
     const path = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
 
     const headers = {
-      'Content-Type': "application/json",
+      Accept: "application/json",
       Authorization: `Bearer ${stabilityAIApiKey}`, // Use StabilityAI API key for image generation
     };
 
@@ -156,15 +154,15 @@ export default function Home() {
       addLog(`StabilityAI image generation request sent, HTTP status: ${response.status}`);
 
       if (!response.ok) {
-        throw new Error(`Error generating image with StabilityAI: HTTP status ${response.status} : ${await response.text()}`);
+        throw new Error(`Error generating image with StabilityAI: HTTP status ${response.status}`);
       }
 
       const responseJSON = await response.json();
 
-      // Assuming the API returns a direct URL or a method to access the generated image
-      // Adjust this logic based on the actual response structure from StabilityAI
       if (responseJSON.artifacts && responseJSON.artifacts.length > 0) {
-        const imageUrl = responseJSON.artifacts[0].url; // This is a placeholder
+        // Decode the base64 image and set it as the image URL
+        const base64Image = responseJSON.artifacts[0].base64;
+        const imageUrl = `data:image/png;base64,${base64Image}`;
         setImageUrl(imageUrl);
         addLog("Image generated successfully with StabilityAI.");
       } else {
@@ -175,6 +173,7 @@ export default function Home() {
       addLog(`Error generating image with StabilityAI: ${error}`);
     }
   };
+
 
   return (
     <div>
