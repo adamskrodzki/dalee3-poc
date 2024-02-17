@@ -105,7 +105,7 @@ export default function Home() {
       addLog(`Image generation request sent, HTTP status: ${response.status}`);
 
       if (response.status !== 200) {
-        console.error("Error generating image: ", error);
+        console.error("Error generating image: ", response.error);
         addLog(`Error generating image: HTTP status ${response.status}`);
         return;
       }
