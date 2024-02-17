@@ -54,6 +54,8 @@ export default function Home() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm');
     formData.append('model', 'whisper-1');
+    formData.append('temperature','0.1');
+    formData.append('prompt', 'recorded voice (source material) might not be in English, but remember, that your translation MUST be in English');
   
     try {
       console.log("Translating.....");
