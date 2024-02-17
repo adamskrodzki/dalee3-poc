@@ -183,7 +183,7 @@ export default function Home() {
         <input
           type="text"
           placeholder="Enter OpenAI API Key"
-          value={apiKey}
+          value={openAIApiKey}
           onChange={(e) => setOpenAIApiKey(e.target.value)}
         />
       </div>
