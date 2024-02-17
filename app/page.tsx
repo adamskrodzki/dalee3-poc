@@ -127,7 +127,7 @@ export default function Home() {
     const path = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
 
     const headers = {
-      Accept: "application/json",
+      'Content-Type': "application/json",
       Authorization: `Bearer ${stabilityAIApiKey}`, // Use StabilityAI API key for image generation
     };
 
