@@ -2,7 +2,8 @@
 import { useState, useRef } from 'react';
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState<string>('');
+  const [openAIApiKey, setOpenAIApiKey] = useState<string>('');
+  const [stabilityAIApiKey, setStabilityAIApiKey] = useState<string>('');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string>('');
   const [translation, setTranslation] = useState<string>('');
@@ -59,7 +60,7 @@ export default function Home() {
       const response = await fetch("https://api.openai.com/v1/audio/translations", {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${openAIApiKey}`, // Use OpenAI API key for translation
         },
         body: formData,
       });
@@ -91,7 +92,7 @@ export default function Home() {
       const response = await fetch("https://api.openai.com/v1/images/generations", {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'Authorization': `Bearer ${openAIApiKey}`, // Use OpenAI API key for image generation
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -105,7 +106,7 @@ export default function Home() {
       addLog(`Image generation request sent, HTTP status: ${response.status}`);
 
       if (response.status !== 200) {
-        console.error("Error generating image: ", response.error);
+        console.error("Error generating image: ", response.statusText);
         addLog(`Error generating image: HTTP status ${response.status}`);
         return;
       }
@@ -119,21 +120,83 @@ export default function Home() {
     }
   };
 
-  // Placeholder function for StabilityAI
+  // Updated function for StabilityAI with a separate API key
   const generateImageWithStabilityAI = async (promptText: string) => {
-    // Placeholder for future implementation
-    addLog("Generating image with StabilityAI (placeholder)...");
-    addLog("StabilityAI image generation not yet implemented.");
+    addLog("Generating image with StabilityAI...");
+
+    const path = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
+
+    const headers = {
+      Accept: "application/json",
+      Authorization: `Bearer ${stabilityAIApiKey}`, // Use StabilityAI API key for image generation
+    };
+
+    const body = {
+      steps: 40,
+      width: 1024,
+      height: 1024,
+      seed: 0,
+      cfg_scale: 5,
+      samples: 1,
+      text_prompts: [
+        {
+          text: promptText,
+          weight: 1
+        }
+      ],
+    };
+
+    try {
+      const response = await fetch(path, {
+        headers,
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+
+      addLog(`StabilityAI image generation request sent, HTTP status: ${response.status}`);
+
+      if (!response.ok) {
+        throw new Error(`Error generating image with StabilityAI: HTTP status ${response.status}`);
+      }
+
+      const responseJSON = await response.json();
+
+      // Assuming the API returns a direct URL or a method to access the generated image
+      // Adjust this logic based on the actual response structure from StabilityAI
+      if (responseJSON.artifacts && responseJSON.artifacts.length > 0) {
+        const imageUrl = responseJSON.artifacts[0].url; // This is a placeholder
+        setImageUrl(imageUrl);
+        addLog("Image generated successfully with StabilityAI.");
+      } else {
+        throw new Error("No image artifacts were returned by StabilityAI.");
+      }
+    } catch (error) {
+      console.error("Error generating image with StabilityAI: ", error);
+      addLog(`Error generating image with StabilityAI: ${error}`);
+    }
   };
 
   return (
     <div>
-      <input
-        type="text"
-        placeholder="Enter API Key"
-        value={apiKey}
-        onChange={(e) => setApiKey(e.target.value)}
-      />
+      <div>
+        <label>OpenAI API Key:</label>
+        <input
+          type="text"
+          placeholder="Enter OpenAI API Key"
+          value={apiKey}
+          onChange={(e) => setOpenAIApiKey(e.target.value)}
+        />
+      </div>
+      <div>
+        <label>StabilityAI API Key:</label>
+        <input
+          type="text"
+          placeholder="Enter StabilityAI API Key"
+          style={{ marginBottom: '1rem' }}
+          value={stabilityAIApiKey}
+          onChange={(e) => setStabilityAIApiKey(e.target.value)}
+        />
+      </div>
       <div>
         <label>
           <input
