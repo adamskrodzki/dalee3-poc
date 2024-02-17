@@ -156,7 +156,7 @@ export default function Home() {
       addLog(`StabilityAI image generation request sent, HTTP status: ${response.status}`);
 
       if (!response.ok) {
-        throw new Error(`Error generating image with StabilityAI: HTTP status ${response.status}`);
+        throw new Error(`Error generating image with StabilityAI: HTTP status ${response.status} : ${await response.text()}`);
       }
 
       const responseJSON = await response.json();
